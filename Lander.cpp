@@ -163,6 +163,22 @@
 
 #include "Lander_Control.h"
 
+void Robust_Thruster(double thrust)
+{
+  if (MT_OK)
+  {
+    Main_Thruster(thrust);
+  }
+  else if (LT_OK)
+  {
+    Left_Thruster(thrust);
+  }
+  else
+  {
+    Right_Thruster(thrust);
+  }
+}
+
 void Lander_Control(void)
 {
   /*
@@ -256,16 +272,28 @@ void Lander_Control(void)
   // Figure out what orientation is needed
   double wanted_orientation = 0;
 
+  printf("Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
+
+  if (PLAT_Y - Position_Y() < 30 && fabs(Position_X() - PLAT_X) < 50)
+  {
+    printf("The last stand\n");
+    Robust_Thruster(0);
+
+    if (Angle() >= 180)
+      Rotate(360 - Angle());
+    else
+
+      Rotate(-Angle());
+    return;
+  }
+
   if (PLAT_Y - Position_Y() < 100 && fabs(Position_X() - PLAT_X) < 100 && Velocity_Y() < -5.0)
   {
-    Rotate(0);
-    Main_Thruster(1.0);
+    Robust_Thruster(1.0);
     printf("EMER\n");
 
     return;
   }
-
-  printf("Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
 
   // Module is oriented properly, check for horizontal position
   // and set thrusters appropriately.
@@ -291,6 +319,7 @@ void Lander_Control(void)
     {
       wanted_orientation = 45;
     }
+
     else
     {
       wanted_orientation = 315;
@@ -302,6 +331,16 @@ void Lander_Control(void)
     wanted_orientation = 0;
   }
 
+  if (!MT_OK && LT_OK)
+  {
+    wanted_orientation = wanted_orientation + 270;
+  }
+  else if (!MT_OK && RT_OK)
+  {
+    wanted_orientation = wanted_orientation + 90;
+  }
+  wanted_orientation = (int)wanted_orientation % 360;
+  printf("wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
   // rotate to desired orientation
   if (fabs(Angle() - wanted_orientation) > 15)
   {
@@ -322,11 +361,13 @@ void Lander_Control(void)
 
     if (rotation < -180)
       rotation += 360;
-    Main_Thruster(0);
+    Robust_Thruster(0);
     Rotate(rotation);
-
+    printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
     return;
   }
+
+  printf("Something something\n");
 
   // Vertical adjustments. Basically, keep the module below the limit for
   // vertical velocity and allow for continuous descent. We trust
@@ -336,21 +377,21 @@ void Lander_Control(void)
   {
     if (Velocity_Y() < VYlim && PLAT_Y - Position_Y() >= 500)
     {
-      Main_Thruster(0.75);
+      Robust_Thruster(0.75);
     }
     else if (Velocity_Y() < VYlim)
     {
-      Main_Thruster(1.0);
+      Robust_Thruster(1.0);
       printf("MAXED\n");
     }
     else
     {
-      Main_Thruster(0);
+      Robust_Thruster(0);
     }
   }
   else
   {
-    Main_Thruster(0.75);
+    Robust_Thruster(0.75);
   }
 
   //  if (Velocity_Y()<VYlim) Main_Thruster(1.0);
