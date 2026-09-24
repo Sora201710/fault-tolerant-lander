@@ -287,7 +287,7 @@ void Lander_Control(void)
     return;
   }
 
-  if (PLAT_Y - Position_Y() < 100 && fabs(Position_X() - PLAT_X) < 100 && Velocity_Y() < -5.0)
+  if (PLAT_Y - Position_Y() < 200 && fabs(Position_X() - PLAT_X) < 100 && Velocity_Y() < -5.0)
   {
     Robust_Thruster(1.0);
     printf("EMER\n");
@@ -375,11 +375,7 @@ void Lander_Control(void)
 
   if (fabs(Position_X() - PLAT_X) < 200 && PLAT_Y - Position_Y() < 500)
   {
-    if (Velocity_Y() < VYlim && PLAT_Y - Position_Y() >= 500)
-    {
-      Robust_Thruster(0.75);
-    }
-    else if (Velocity_Y() < VYlim)
+    if (Velocity_Y() < VYlim)
     {
       Robust_Thruster(1.0);
       printf("MAXED\n");
@@ -391,7 +387,7 @@ void Lander_Control(void)
   }
   else
   {
-    Robust_Thruster(0.75);
+    Robust_Thruster(0.5);
   }
 
   //  if (Velocity_Y()<VYlim) Main_Thruster(1.0);
