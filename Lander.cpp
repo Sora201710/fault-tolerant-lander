@@ -541,7 +541,7 @@ void Safety_Override(void)
       Rotate(rotation);
       return;
     }
-    if (Velocity_Y() > 1.0)
+    if (Velocity_Y() > 2.0)
     {
       printf("Going up too fast, setting thruster to 0\n");
       override = 1;
@@ -552,6 +552,9 @@ void Safety_Override(void)
       override = 1;
       Robust_Thruster(1.0);
     }
+  }
+  else{
+    Robust_Thruster(0.2);
   }
   override = 0;
 }
