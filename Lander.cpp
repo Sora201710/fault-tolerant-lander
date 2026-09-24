@@ -450,6 +450,14 @@ override = 0;
  // safely land the craft)
  if (fabs(PLAT_X-Position_X())<200&&fabs(PLAT_Y-Position_Y())<200) return;
 
+  if (Position_Y() < 30)
+  {
+    override = 1;
+    Robust_Thruster(0);
+    //printf("EMER\n");
+    return;
+  }
+
  // Determine the closest surfaces in the direction
  // of motion. This is done by checking the sonar
  // array in the quadrant corresponding to the
