@@ -1,4 +1,3 @@
-#include <cstdio>
 /*
 	Lander Control simulation.
 
@@ -217,7 +216,7 @@ void Lander_Control(void)
 
  double VXlim;
  double VYlim;
-printf("I'm in lander, angle: %f\n", Angle());
+double VYlimUP = 4;
  // Set velocity limits depending on distance to platform.
  // If the module is far from the platform allow it to
  // move faster, decrease speed limits as the module
@@ -225,7 +224,7 @@ printf("I'm in lander, angle: %f\n", Angle());
  // with velocity limits when things fail.
  if (fabs(Position_X()-PLAT_X)>200) VXlim=25;
  else if (fabs(Position_X()-PLAT_X)>100) VXlim=15;
- else VXlim=5;
+ else VXlim=2;
 
  if (PLAT_Y-Position_Y()>200) VYlim=-20;
  else if (PLAT_Y-Position_Y()>100) VYlim=-10;  // These are negative because they
@@ -246,12 +245,8 @@ printf("I'm in lander, angle: %f\n", Angle());
  // effect, i.e. the rotation angle does not accumulate
  // for successive calls.
 
- if (Angle()>1&&Angle()<359)
- {
-  if (Angle()>=180) Rotate(360-Angle());
-  else Rotate(-Angle());
-  return;
- }
+ // Figure out what orientation is needed
+double wanted_orientation = 0;
 
  // Module is oriented properly, check for horizontal position
  // and set thrusters appropriately.
@@ -259,36 +254,80 @@ printf("I'm in lander, angle: %f\n", Angle());
  {
   // Lander is to the LEFT of the landing platform, use Right thrusters to move
   // lander to the left.
-  Left_Thruster(0);	// Make sure we're not fighting ourselves here!
-  if (Velocity_X()>(-VXlim)) Right_Thruster((VXlim+fmin(0,Velocity_X()))/VXlim);
+  if (Velocity_X()>(-VXlim)) {
+    wanted_orientation = 315;
+  }
+  
   else
   {
    // Exceeded velocity limit, brake
-   Right_Thruster(0);
-   Left_Thruster(fabs(VXlim-Velocity_X()));
+   wanted_orientation = 45;
   }
  }
  else
  {
   // Lander is to the RIGHT of the landing platform, opposite from above
-  Right_Thruster(0);
-  if (Velocity_X()<VXlim) Left_Thruster((VXlim-fmax(0,Velocity_X()))/VXlim);
+  if (Velocity_X()<VXlim){
+    wanted_orientation = 45;
+  }
   else
   {
-   Left_Thruster(0);
-   Right_Thruster(fabs(VXlim-Velocity_X()));
+   wanted_orientation = 315;
   }
  }
+
+if (fabs(Position_X() - PLAT_X) < 100 && PLAT_Y - Position_Y() < 100) {
+      wanted_orientation = 0;
+    }
+
+ // rotate to desired orientation
+ if (fabs(Angle() - wanted_orientation) > 2)
+{
+    // If we're moving upward too quickly, point horizontally
+    // if (Velocity_Y() > VYlimUP)
+    // {
+    //     if (wanted_orientation == 45)
+    //         wanted_orientation = 90;
+    //     else if (wanted_orientation == 315)
+    //         wanted_orientation = 270;
+    // }
+    
+    double rotation = wanted_orientation - Angle();
+
+    // Choose the shortest rotation
+    if (rotation > 180)
+        rotation -= 360;
+
+    if (rotation < -180)
+        rotation += 360;
+    Main_Thruster(0);
+    Rotate(rotation);
+    return;
+}
 
  // Vertical adjustments. Basically, keep the module below the limit for
  // vertical velocity and allow for continuous descent. We trust
  // Safety_Override() to save us from crashing with the ground.
- if (Velocity_Y()<VYlim) Main_Thruster(1.0);
- else Main_Thruster(0);
+ 
+ if (fabs(Position_X() - PLAT_X) < 200 && PLAT_Y - Position_Y() < 200) {
+    if(Velocity_Y() < VYlim){
+      Main_Thruster(0.75);
+    }  
+    else{
+      Main_Thruster(0);
+    }
+}
+else{
+  Main_Thruster(0.75);
+}
+ 
+//  if (Velocity_Y()<VYlim) Main_Thruster(1.0);
+//  else Main_Thruster(0);
 }
 
 void Safety_Override(void)
 {
+  return;
  /*
    This function is intended to keep the lander from
    crashing. It checks the sonar distance array,
@@ -321,7 +360,6 @@ void Safety_Override(void)
  double Vmag;
  double dmin;
 
-printf("Im in override angle: %f\n", Angle());
  // Establish distance threshold based on lander
  // speed (we need more time to rectify direction
  // at high speed)
