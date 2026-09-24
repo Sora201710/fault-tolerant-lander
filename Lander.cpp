@@ -368,7 +368,7 @@ void Lander_Control(void)
   // Safety_Override() to save us from crashing with the ground.
   if (fabs(Position_X() - PLAT_X) < 100)
     Robust_Thruster(0.1);
-  else
+  else if (Velocity_Y() < 1)
     Robust_Thruster(0.5);
 }
 
@@ -541,7 +541,7 @@ void Safety_Override(void)
       Rotate(rotation);
       return;
     }
-    if (Velocity_Y() > 2.0)
+    if (Velocity_Y() > 1.0)
     {
       printf("Going up too fast, setting thruster to 0\n");
       override = 1;
