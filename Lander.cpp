@@ -424,7 +424,7 @@ void Safety_Override(void)
   if (fabs(PLAT_X - Position_X()) < 200 && fabs(PLAT_Y - Position_Y()) < 200)
     return;
 
-  if (Position_Y() < 30)
+  if (Position_Y() < 60)
   {
     override = 1;
     Robust_Thruster(0);
