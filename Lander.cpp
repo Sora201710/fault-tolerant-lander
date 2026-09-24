@@ -349,15 +349,6 @@ void Lander_Control(void)
   // rotate to desired orientation
   if (fabs(Angle() - wanted_orientation) > 15)
   {
-    // If we're moving upward too quickly, point horizontally
-    // if (Velocity_Y() > VYlimUP)
-    // {
-    //     if (wanted_orientation == 45)
-    //         wanted_orientation = 90;
-    //     else if (wanted_orientation == 315)
-    //         wanted_orientation = 270;
-    // }
-
     double rotation = wanted_orientation - Angle();
 
     // Choose the shortest rotation
@@ -505,15 +496,6 @@ override = 0;
 
   if (fabs(Angle() - wanted_orientation) > 15)
   {
-    // If we're moving upward too quickly, point horizontally
-    // if (Velocity_Y() > VYlimUP)
-    // {
-    //     if (wanted_orientation == 45)
-    //         wanted_orientation = 90;
-    //     else if (wanted_orientation == 315)
-    //         wanted_orientation = 270;
-    // }
-
     double rotation = wanted_orientation - Angle();
 
     // Choose the shortest rotation
