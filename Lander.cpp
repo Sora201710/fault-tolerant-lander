@@ -239,8 +239,6 @@ void Lander_Control(void)
           I'll give you zero.
   **************************************************/
 
-  printf("In main control\n");
-
   double VXlim;
   double VYlim;
   double VYlimUP = 4;
@@ -282,7 +280,7 @@ void Lander_Control(void)
   // Figure out what orientation is needed
   double wanted_orientation = 0;
 
-  printf("Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
+  printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
 
   if (PLAT_Y - Position_Y() < 30 && fabs(Position_X() - PLAT_X) < 50)
   {
@@ -402,7 +400,9 @@ void Safety_Override(void)
     carry out speed corrections using the thrusters
   **************************************************/
 
-  printf("In override\n");
+
+  printf("Override Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
+
 
   double DistLimit;
   double Vmag;
