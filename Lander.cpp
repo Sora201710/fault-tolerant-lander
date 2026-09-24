@@ -165,6 +165,7 @@
 
 void Robust_Thruster(double thrust)
 {
+  printf("set thrust to %f\n", thrust);
   if (MT_OK)
   {
     Main_Thruster(thrust);
@@ -183,8 +184,8 @@ int override = 0;
 
 void Lander_Control(void)
 {
-  if(override == 1){
-    printf("Override!\n");
+  if (override == 1)
+  {
     return;
   }
   /*
@@ -237,6 +238,8 @@ void Lander_Control(void)
           I'll give you zero.
   **************************************************/
 
+  printf("In main control\n");
+
   double VXlim;
   double VYlim;
   double VYlimUP = 4;
@@ -282,7 +285,7 @@ void Lander_Control(void)
 
   if (PLAT_Y - Position_Y() < 30 && fabs(Position_X() - PLAT_X) < 50)
   {
-    //printf("The last stand\n");
+    // printf("The last stand\n");
     Robust_Thruster(0);
 
     if (Angle() >= 180)
@@ -296,7 +299,7 @@ void Lander_Control(void)
   if (PLAT_Y - Position_Y() < 200 && fabs(Position_X() - PLAT_X) < 100 && Velocity_Y() < -5.0)
   {
     Robust_Thruster(1.0);
-    //printf("EMER\n");
+    // printf("EMER\n");
 
     return;
   }
@@ -346,8 +349,8 @@ void Lander_Control(void)
     wanted_orientation = wanted_orientation + 90;
   }
   wanted_orientation = (int)wanted_orientation % 360;
-  //printf("wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
-  // rotate to desired orientation
+  // printf("wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
+  //  rotate to desired orientation
   if (fabs(Angle() - wanted_orientation) > 15)
   {
     double rotation = wanted_orientation - Angle();
@@ -360,11 +363,9 @@ void Lander_Control(void)
       rotation += 360;
     Robust_Thruster(0);
     Rotate(rotation);
-    //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
+    // printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
     return;
   }
-
-  //printf("Something something\n");
 
   // Vertical adjustments. Basically, keep the module below the limit for
   // vertical velocity and allow for continuous descent. We trust
@@ -375,194 +376,198 @@ void Lander_Control(void)
     if (Velocity_Y() < VYlim)
     {
       Robust_Thruster(1.0);
-      //printf("MAXED\n");
     }
     else
     {
-      printf("above 0 thrust\n");
       Robust_Thruster(0);
     }
   }
   else
   {
-    printf("above 0.5 thrust\n");
     Robust_Thruster(0.5);
   }
-
-  //  if (Velocity_Y()<VYlim) Main_Thruster(1.0);
-  //  else Main_Thruster(0);
 }
 
 void Safety_Override(void)
 {
- /*
-   This function is intended to keep the lander from
-   crashing. It checks the sonar distance array,
-   if the distance to nearby solid surfaces and
-   uses thrusters to maintain a safe distance from
-   the ground unless the ground happens to be the
-   landing platform.
+  /*
+    This function is intended to keep the lander from
+    crashing. It checks the sonar distance array,
+    if the distance to nearby solid surfaces and
+    uses thrusters to maintain a safe distance from
+    the ground unless the ground happens to be the
+    landing platform.
 
-   Additionally, it enforces a maximum speed limit
-   which when breached triggers an emergency brake
-   operation.
- */
+    Additionally, it enforces a maximum speed limit
+    which when breached triggers an emergency brake
+    operation.
+  */
 
-/**************************************************
- TO DO: Modify this function so that it can do its
-        work even if components or sensors
-        fail
-**************************************************/
+  /**************************************************
+   TO DO: Modify this function so that it can do its
+          work even if components or sensors
+          fail
+  **************************************************/
 
-/**************************************************
-  How this works:
-  Check the sonar readings, for each sonar
-  reading that is below a minimum safety threshold
-  AND in the general direction of motion AND
-  not corresponding to the landing platform,
-  carry out speed corrections using the thrusters
-**************************************************/
+  /**************************************************
+    How this works:
+    Check the sonar readings, for each sonar
+    reading that is below a minimum safety threshold
+    AND in the general direction of motion AND
+    not corresponding to the landing platform,
+    carry out speed corrections using the thrusters
+  **************************************************/
 
- double DistLimit;
- double Vmag;
- double dmin;
-override = 0;
- // Establish distance threshold based on lander
- // speed (we need more time to rectify direction
- // at high speed)
- Vmag=Velocity_X()*Velocity_X();
- Vmag+=Velocity_Y()*Velocity_Y();
+  printf("In override\n");
 
- DistLimit=fmax(75,Vmag);
+  double DistLimit;
+  double Vmag;
+  double dmin;
+  override = 0;
 
- // If we're close to the landing platform, disable
- // safety override (close to the landing platform
- // the Control_Policy() should be trusted to
- // safely land the craft)
- if (fabs(PLAT_X-Position_X())<200&&fabs(PLAT_Y-Position_Y())<200) return;
+  // Establish distance threshold based on lander
+  // speed (we need more time to rectify direction
+  // at high speed)
+  Vmag = Velocity_X() * Velocity_X();
+  Vmag += Velocity_Y() * Velocity_Y();
+
+  DistLimit = fmax(75, Vmag);
+
+  // If we're close to the landing platform, disable
+  // safety override (close to the landing platform
+  // the Control_Policy() should be trusted to
+  // safely land the craft)
+  if (fabs(PLAT_X - Position_X()) < 200 && fabs(PLAT_Y - Position_Y()) < 200)
+    return;
 
   if (Position_Y() < 30)
   {
     override = 1;
     Robust_Thruster(0);
-    //printf("EMER\n");
     return;
   }
 
- // Determine the closest surfaces in the direction
- // of motion. This is done by checking the sonar
- // array in the quadrant corresponding to the
- // ship's motion direction to find the entry
- // with the smallest registered distance
+  // Determine the closest surfaces in the direction
+  // of motion. This is done by checking the sonar
+  // array in the quadrant corresponding to the
+  // ship's motion direction to find the entry
+  // with the smallest registered distance
 
- // Horizontal direction.
- dmin=1000000;
- if (Velocity_X()>0)
- {
-  for (int i=5;i<14;i++)
-   if (SONAR_DIST[i]>-1 && SONAR_DIST[i] < dmin) dmin = SONAR_DIST[i];
- }
- else
- {
-  for (int i=22;i<32;i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
-
- double wanted_orientation = 0;
-
- // Determine whether we're too close for comfort. There is a reason
- // to have this distance limit modulated by horizontal speed...
- // what is it?
- if (dmin<DistLimit*fmax(.25,fmin(fabs(Velocity_X())/5.0,1)))
- { // Too close to a surface in the horizontal direction
-
-  if (Velocity_X()>0){
-    wanted_orientation = 315;
+  // Horizontal direction.
+  dmin = 1000000;
+  if (Velocity_X() > 0)
+  {
+    for (int i = 5; i < 14; i++)
+      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+        dmin = SONAR_DIST[i];
   }
   else
   {
-    wanted_orientation = 45;
+    for (int i = 22; i < 32; i++)
+      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+        dmin = SONAR_DIST[i];
   }
 
-  if (!MT_OK && LT_OK)
-  {
-    wanted_orientation = wanted_orientation + 270;
-  }
-  else if (!MT_OK && RT_OK)
-  {
-    wanted_orientation = wanted_orientation + 90;
-  }
-  wanted_orientation = (int)wanted_orientation % 360;
+  double wanted_orientation = 0;
 
-  if (fabs(Angle() - wanted_orientation) > 15)
-  {
-    double rotation = wanted_orientation - Angle();
+  // Determine whether we're too close for comfort. There is a reason
+  // to have this distance limit modulated by horizontal speed...
+  // what is it?
+  if (dmin < DistLimit * fmax(.25, fmin(fabs(Velocity_X()) / 5.0, 1)))
+  { // Too close to a surface in the horizontal direction
 
-    // Choose the shortest rotation
-    if (rotation > 180)
-      rotation -= 360;
+    if (Velocity_X() > 0)
+    {
+      wanted_orientation = 315;
+    }
+    else
+    {
+      wanted_orientation = 45;
+    }
 
-    if (rotation < -180)
-      rotation += 360;
-    Rotate(rotation);
-    return;
-  }
-  override = 1;
-  printf("Unsafe horizontal - running robust thruster at max accel\n");
-  Robust_Thruster(1);
- }
+    if (!MT_OK && LT_OK)
+    {
+      wanted_orientation = wanted_orientation + 270;
+    }
+    else if (!MT_OK && RT_OK)
+    {
+      wanted_orientation = wanted_orientation + 90;
+    }
+    wanted_orientation = (int)wanted_orientation % 360;
 
- // Vertical direction
- dmin=1000000;
- if (Velocity_Y()>5)      // Mind this! there is a reason for it...
- {
-  for (int i=0; i<5; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
-  for (int i=32; i<36; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- else
- {
-  for (int i=14; i<22; i++)
-   if (SONAR_DIST[i]>-1&&SONAR_DIST[i]<dmin) dmin=SONAR_DIST[i];
- }
- if (dmin<DistLimit)   // Too close to a surface in the horizontal direction
- {
-  wanted_orientation = 0;
+    if (fabs(Angle() - wanted_orientation) > 15)
+    {
+      double rotation = wanted_orientation - Angle();
 
-  if (!MT_OK && LT_OK)
-  {
-    wanted_orientation = wanted_orientation + 270;
-  }
-  else if (!MT_OK && RT_OK)
-  {
-    wanted_orientation = wanted_orientation + 90;
-  }
-  wanted_orientation = (int)wanted_orientation % 360;
+      // Choose the shortest rotation
+      if (rotation > 180)
+        rotation -= 360;
 
-  if (fabs(Angle() - wanted_orientation) > 15)
-  {
-    double rotation = wanted_orientation - Angle();
-
-    // Choose the shortest rotation
-    if (rotation > 180)
-      rotation -= 360;
-
-    if (rotation < -180)
-      rotation += 360;
-    Rotate(rotation);
-    return;
-  }
-  if (Velocity_Y()>2.0){
-    printf("Going up too fast, setting thruster to 0\n");
+      if (rotation < -180)
+        rotation += 360;
+      Rotate(rotation);
+      return;
+    }
     override = 1;
-   Robust_Thruster(0);
+    printf("Unsafe horizontal - running robust thruster at max accel\n");
+    Robust_Thruster(1);
+  }
+
+  // Vertical direction
+  dmin = 1000000;
+  if (Velocity_Y() > 5) // Mind this! there is a reason for it...
+  {
+    for (int i = 0; i < 5; i++)
+      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+        dmin = SONAR_DIST[i];
+    for (int i = 32; i < 36; i++)
+      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+        dmin = SONAR_DIST[i];
   }
   else
   {
-    override = 1;
-   Robust_Thruster(1.0);
+    for (int i = 14; i < 22; i++)
+      if (SONAR_DIST[i] > -1 && SONAR_DIST[i] < dmin)
+        dmin = SONAR_DIST[i];
   }
-}
-}
+  if (dmin < DistLimit) // Too close to a surface in the horizontal direction
+  {
+    wanted_orientation = 0;
 
+    if (!MT_OK && LT_OK)
+    {
+      wanted_orientation = wanted_orientation + 270;
+    }
+    else if (!MT_OK && RT_OK)
+    {
+      wanted_orientation = wanted_orientation + 90;
+    }
+    wanted_orientation = (int)wanted_orientation % 360;
+
+    if (fabs(Angle() - wanted_orientation) > 15)
+    {
+      double rotation = wanted_orientation - Angle();
+
+      // Choose the shortest rotation
+      if (rotation > 180)
+        rotation -= 360;
+
+      if (rotation < -180)
+        rotation += 360;
+      Rotate(rotation);
+      return;
+    }
+    if (Velocity_Y() > 2.0)
+    {
+      printf("Going up too fast, setting thruster to 0\n");
+      override = 1;
+      Robust_Thruster(0);
+    }
+    else
+    {
+      override = 1;
+      Robust_Thruster(1.0);
+    }
+  }
+  override = 0;
+}
