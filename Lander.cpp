@@ -184,6 +184,7 @@ int override = 0;
 void Lander_Control(void)
 {
   if(override == 1){
+    printf("Override!\n");
     return;
   }
   /*
@@ -426,7 +427,6 @@ void Safety_Override(void)
  double Vmag;
  double dmin;
 override = 0;
-
  // Establish distance threshold based on lander
  // speed (we need more time to rectify direction
  // at high speed)
@@ -563,7 +563,6 @@ override = 0;
     override = 1;
    Robust_Thruster(1.0);
   }
- }
- override = 0;
+}
 }
 
