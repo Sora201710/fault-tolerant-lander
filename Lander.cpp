@@ -62,6 +62,7 @@
                            The laser range finder never fails (probably was designed and
                            built by PacoNetics Inc.)
 
+
           Note: All sensors are NOISY. This makes your life more interesting.
 
   - Variables accessible to your 'in flight' computer
@@ -281,11 +282,11 @@ void Lander_Control(void)
   // Figure out what orientation is needed
   double wanted_orientation = 0;
 
-  ////printf("Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
+  printf("Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X() - PLAT_X), fabs(Position_Y() - PLAT_Y));
 
   if (PLAT_Y - Position_Y() < 30 && fabs(Position_X() - PLAT_X) < 50)
   {
-    // printf("The last stand\n");
+    printf("The last stand\n");
     Robust_Thruster(0);
 
     if (Angle() >= 180)
@@ -310,7 +311,7 @@ void Lander_Control(void)
   {
     // Lander is to the LEFT of the landing platform, use Right thrusters to move
     // lander to the left.
-    if (Velocity_X() > (-VXlim))
+    if (Velocity_X() > -VXlim)
     {
       wanted_orientation = 315;
     }
@@ -361,31 +362,17 @@ void Lander_Control(void)
 
     if (rotation < -180)
       rotation += 360;
-    Robust_Thruster(0);
     Rotate(rotation);
     // printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle());
     return;
   }
 
-  // Vertical adjustments. Basically, keep the module below the limit for
-  // vertical velocity and allow for continuous descent. We trust
   // Safety_Override() to save us from crashing with the ground.
 
-  if (fabs(Position_X() - PLAT_X) < 200 && PLAT_Y - Position_Y() < 500)
-  {
-    if (Velocity_Y() < VYlim)
-    {
-      Robust_Thruster(1.0);
-    }
-    else
-    {
-      Robust_Thruster(0);
-    }
-  }
+  if (fabs(Position_X() - PLAT_X) < 200)
+    Robust_Thruster(0.1);
   else
-  {
-    Robust_Thruster(0.5);
-  }
+    Robust_Thruster(0.4);
 }
 
 void Safety_Override(void)
