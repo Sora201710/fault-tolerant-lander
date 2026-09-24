@@ -300,8 +300,6 @@ void Lander_Control(void)
   if (PLAT_Y - Position_Y() < 200 && fabs(Position_X() - PLAT_X) < 100 && Velocity_Y() < -5.0)
   {
     Robust_Thruster(1.0);
-    // printf("EMER\n");
-
     return;
   }
 
@@ -368,11 +366,10 @@ void Lander_Control(void)
   }
 
   // Safety_Override() to save us from crashing with the ground.
-
-  if (fabs(Position_X() - PLAT_X) < 200)
+  if (fabs(Position_X() - PLAT_X) < 100)
     Robust_Thruster(0.1);
   else
-    Robust_Thruster(0.4);
+    Robust_Thruster(0.5);
 }
 
 void Safety_Override(void)
