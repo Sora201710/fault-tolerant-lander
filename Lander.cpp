@@ -166,48 +166,56 @@
 
 const int HISTORY_CAPACITY = 20;
 
-typedef struct {
+typedef struct
+{
   int size;
   double history[HISTORY_CAPACITY];
 } History;
 
-History velocity_x_history = {0, {}}; 
+History velocity_x_history = {0, {}};
 History velocity_y_history = {0, {}};
 History position_x_history = {0, {}};
 History position_y_history = {0, {}};
 History angle_history = {0, {}};
 
-void add_history(History *h, double reading) {
-    if (h->size < HISTORY_CAPACITY) {
-        h->history[h->size] = reading;
-        h->size++;
-    } else {
-        for (int i = 0; i < HISTORY_CAPACITY - 1; i++) {
-            h->history[i] = h->history[i + 1];
-        }
-
-        h->history[HISTORY_CAPACITY - 1] = reading;
+void add_history(History *h, double reading)
+{
+  if (h->size < HISTORY_CAPACITY)
+  {
+    h->history[h->size] = reading;
+    h->size++;
+  }
+  else
+  {
+    for (int i = 0; i < HISTORY_CAPACITY - 1; i++)
+    {
+      h->history[i] = h->history[i + 1];
     }
+
+    h->history[HISTORY_CAPACITY - 1] = reading;
+  }
 }
 
-int history_OK(History *h) {
-    if (h->size < 5)
-        return 1;
+int history_OK(History *h)
+{
+  if (h->size < 5)
+    return 1;
 
-    double total_distance = 0;
+  double total_distance = 0;
 
-    for (int i = h->size - 4; i < h->size; i++) {
-        total_distance += fabs(h->history[i] - h->history[i - 1]);
-    }
+  for (int i = h->size - 4; i < h->size; i++)
+  {
+    total_distance += fabs(h->history[i] - h->history[i - 1]);
+  }
 
-    double average_distance = total_distance / 4;
+  double average_distance = total_distance / 4;
 
-    return (average_distance <= 15.0);
+  return (average_distance <= 15.0);
 }
 
 void Robust_Thruster(double thrust)
 {
-  //printf("set thrust to %f\n", thrust);
+  // printf("set thrust to %f\n", thrust);
   if (MT_OK)
   {
     Main_Thruster(thrust);
@@ -223,77 +231,88 @@ void Robust_Thruster(double thrust)
 }
 
 int Velocity_X_OK = 1;
-double Velocity_X_robust(void){
-  if (history_OK(&velocity_x_history) && Velocity_X_OK){
-    //printf("Velocity X history is ok!\n");
+double Velocity_X_robust(void)
+{
+  if (history_OK(&velocity_x_history) && Velocity_X_OK)
+  {
+    // printf("Velocity X history is ok!\n");
     double reading = Velocity_X();
     add_history(&velocity_x_history, reading);
     return reading;
   }
+  if (Velocity_X_OK)
+    printf("Velocity X history not ok!\n");
   Velocity_X_OK = 0;
-  //printf("Velocity X history not ok!\n");
   return -1;
 }
 
 int Velocity_Y_OK = 1;
-double Velocity_Y_robust(void){
-  if (history_OK(&velocity_y_history) && Velocity_Y_OK){
-    //printf("Velocity Y history is ok!\n");
+double Velocity_Y_robust(void)
+{
+  if (history_OK(&velocity_y_history) && Velocity_Y_OK)
+  {
+    // printf("Velocity Y history is ok!\n");
     double reading = Velocity_Y();
     add_history(&velocity_y_history, reading);
     return reading;
   }
+  if (Velocity_Y_OK)
+    printf("Velocity Y history not ok!\n");
   Velocity_Y_OK = 0;
-  //printf("Velocity Y history not ok!\n");
   return -1;
 }
 
 int Position_X_OK = 1;
-double Position_X_robust(void){
+double Position_X_robust(void)
+{
   double reading = Position_X();
-  if (history_OK(&position_x_history) && Position_X_OK){
-    //printf("Position X history is ok!\n");
+  if (history_OK(&position_x_history) && Position_X_OK)
+  {
+    // printf("Position X history is ok!\n");
     add_history(&position_x_history, reading);
     return reading;
   }
+  if (Position_X_OK)
+    printf("Position X history not ok!\n");
   Position_X_OK = 0;
-  //printf("Position X history not ok!\n");
   return -1;
 }
 
 int Position_Y_OK = 1;
-double Position_Y_robust(void){
-  if (history_OK(&position_y_history) && Position_Y_OK){
-    //printf("Position Y history is ok!\n");
+double Position_Y_robust(void)
+{
+  if (history_OK(&position_y_history) && Position_Y_OK)
+  {
+    // printf("Position Y history is ok!\n");
     double reading = Position_Y();
     add_history(&position_y_history, reading);
     return reading;
   }
-
+  if (Position_X_OK)
+    printf("Position Y history not ok!\n");
   Position_Y_OK = 0;
-  //printf("Position Y history not ok!\n");
   return -1;
 }
 
 int Angle_OK = 1;
-double Angle_robust(void){
-  if (history_OK(&angle_history) && Angle_OK){
-    //printf("Angle history is ok!\n");
+double Angle_robust(void)
+{
+  if (history_OK(&angle_history) && Angle_OK)
+  {
+    // printf("Angle history is ok!\n");
     double reading = Angle();
     add_history(&angle_history, reading);
     return reading;
   }
-
+  if (Angle_OK)
+    printf("Angle history not ok!\n");
   Angle_OK = 0;
-  //printf("Angle history not ok!\n");
   return -1;
 }
 
-
-
 /**
 
-TODO: 
+TODO:
   - Create robust Vx, Vy, x, y sensors
   - use a history of values, if they're off from each other by large factor there is a failure
   - if Vx is bad but x is good, use x to estimate Vx and vice versa
@@ -401,11 +420,11 @@ void Lander_Control(void)
   // Figure out what orientation is needed
   double wanted_orientation = 0;
 
-  //printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
+  // printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
 
   if (PLAT_Y - Position_Y_robust() < 30 && fabs(Position_X_robust() - PLAT_X) < 50)
   {
-    //printf("The last stand\n");
+    // printf("The last stand\n");
     Robust_Thruster(0);
 
     if (Angle_robust() >= 180)
@@ -521,9 +540,7 @@ void Safety_Override(void)
     carry out speed corrections using the thrusters
   **************************************************/
 
-
-  //printf("Override Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
-
+  // printf("Override Velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
 
   double DistLimit;
   double Vmag;
@@ -614,7 +631,7 @@ void Safety_Override(void)
       return;
     }
     override = 1;
-    //printf("Unsafe horizontal - running robust thruster at max accel\n");
+    // printf("Unsafe horizontal - running robust thruster at max accel\n");
     Robust_Thruster(1);
   }
 
@@ -664,7 +681,7 @@ void Safety_Override(void)
     }
     if (Velocity_Y_robust() > 2.0)
     {
-      //printf("Going up too fast, setting thruster to 0\n");
+      // printf("Going up too fast, setting thruster to 0\n");
       override = 1;
       Robust_Thruster(0);
     }
@@ -674,7 +691,8 @@ void Safety_Override(void)
       Robust_Thruster(1.0);
     }
   }
-  else{
+  else
+  {
     Robust_Thruster(0.2);
   }
   override = 0;
