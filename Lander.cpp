@@ -164,7 +164,7 @@
 
 #include "Lander_Control.h"
 
-const int HISTORY_CAPACITY = 20;
+const int HISTORY_CAPACITY = 50;
 
 typedef struct
 {
@@ -196,89 +196,81 @@ void add_history(History *h, double reading)
   }
 }
 
-double calc_variance(History *h)
+double calc_variance(double *array, int size)
 {
   double sum = 0.0;
 
-  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  for (int i = 0; i < size; i++)
   {
-    sum += h->history[i];
+    sum += array[i];
   }
 
-  double mean = sum / HISTORY_CAPACITY;
+  double mean = sum / size;
 
   double square_diff = 0.0;
 
-  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  for (int i = 0; i < size; i++)
   {
-    square_diff += (h->history[i] - mean) * (h->history[i] - mean);
+    square_diff += (array[i] - mean) * (array[i] - mean);
   }
 
-  double variance = square_diff / (HISTORY_CAPACITY - 1);
+  double variance = square_diff / (size - 1);
 
   return variance;
 }
 
-void print_array(History *history)
+void print_array(double *array)
 {
   for (int i = 0; i < HISTORY_CAPACITY; i++)
   {
-    printf("%f, ", history->history[i]);
+    printf("%f, ", array[i]);
   }
-
-  printf("\n variance: %f\n", calc_variance(history));
+  printf("\n");
 }
 
 int history_OK(History *h)
 {
   if (h->size < HISTORY_CAPACITY)
     return 1;
+  double variance = calc_variance(h->history, HISTORY_CAPACITY);
 
-  double total_distance = 0;
-  double sum = 0.0;
-
-  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  if (variance >= 250)
   {
-    sum += h->history[i];
+    // printf("Not Okay!\n");
+    // print_array(h->history);
+    // printf("variance: %f\n", variance);
   }
 
-  double variance = calc_variance(h);
-
-  // for (int i = h->size - 4; i < h->size; i++)
-  // {
-  //   total_distance += fabs(h->history[i] - h->history[i - 1]);
-  // }
-
-  // double average_distance = total_distance / 4;
-
-  // return (average_distance <= 30.0);
-
-  // return abs(normed_variance) > 0.5;
-  return variance < 200;
+  return variance < 250;
 }
 
 int angle_history_OK(History *h)
 {
-  if (h->size < 5)
+  if (h->size < HISTORY_CAPACITY)
     return 1;
 
-  double total_distance = 0;
+  double diff[HISTORY_CAPACITY - 1];
 
-  for (int i = h->size - 4; i < h->size; i++)
+  for (int i = 1; i < HISTORY_CAPACITY; i++)
   {
-
-    double distance = fabs(h->history[i] - h->history[i - 1]);
-
-    // Handle crossing from 360° to 0°
-    if (distance > 180.0)
-      distance = 360.0 - distance;
-
-    total_distance += distance;
+    double distance = fabs(h->history[i - 1] - h->history[i]);
+    if (distance > 180)
+    {
+      distance = 360 - distance;
+    }
+    diff[i - 1] = distance;
   }
 
-  double average_distance = total_distance / 4;
+  double variance = calc_variance(diff, HISTORY_CAPACITY - 1);
 
-  return (average_distance <= 20.0);
+  if (variance >= 200)
+  {
+    printf("Not Okay!\n");
+    // print_array(diff);
+    printf("rotation variance: %f\n", variance);
+  }
+
+  return variance < 200;
 }
 
 void Robust_Thruster(double thrust)
@@ -301,7 +293,7 @@ void Robust_Thruster(double thrust)
 int Velocity_X_OK = 1;
 double Velocity_X_robust(void)
 {
-  if (history_OK(&velocity_x_history) && Velocity_X_OK)
+  if (Velocity_X_OK && history_OK(&velocity_x_history))
   {
     // printf("Velocity X history is ok!\n");
     double reading = Velocity_X();
@@ -312,8 +304,6 @@ double Velocity_X_robust(void)
   if (Velocity_X_OK)
   {
     printf("Horizonal Velocity history not ok!\n");
-    print_array(&velocity_x_history);
-    printf("variance: %f\n", calc_variance(&velocity_x_history));
   }
   Velocity_X_OK = 0;
   return -1;
@@ -322,7 +312,7 @@ double Velocity_X_robust(void)
 int Velocity_Y_OK = 1;
 double Velocity_Y_robust(void)
 {
-  if (history_OK(&velocity_y_history) && Velocity_Y_OK)
+  if (Velocity_Y_OK && history_OK(&velocity_y_history))
   {
     // printf("Velocity Y history is ok!\n");
     double reading = Velocity_Y();
@@ -332,8 +322,6 @@ double Velocity_Y_robust(void)
   if (Velocity_Y_OK)
   {
     printf("Vertical Velocity history not ok!\n");
-    print_array(&velocity_y_history);
-    printf("variance: %f\n", calc_variance(&velocity_x_history));
   }
   Velocity_Y_OK = 0;
   return -1;
@@ -343,7 +331,7 @@ int Position_X_OK = 1;
 double Position_X_robust(void)
 {
   double reading = Position_X();
-  if (history_OK(&position_x_history) && Position_X_OK)
+  if (Position_X_OK && history_OK(&position_x_history))
   {
     // printf("Position X history is ok!\n");
     add_history(&position_x_history, reading);
@@ -352,8 +340,6 @@ double Position_X_robust(void)
   if (Position_X_OK)
   {
     printf("Horizontal Position history not ok!\n");
-    print_array(&position_x_history);
-    printf("variance: %f\n", calc_variance(&velocity_x_history));
   }
   Position_X_OK = 0;
   return -1;
@@ -362,7 +348,7 @@ double Position_X_robust(void)
 int Position_Y_OK = 1;
 double Position_Y_robust(void)
 {
-  if (history_OK(&position_y_history) && Position_Y_OK)
+  if (Position_Y_OK && history_OK(&position_y_history))
   {
     // printf("Position Y history is ok!\n");
     double reading = Position_Y();
@@ -372,8 +358,6 @@ double Position_Y_robust(void)
   if (Position_Y_OK)
   {
     printf("Vertical Position history not ok!\n");
-    print_array(&position_y_history);
-    printf("variance: %f\n", calc_variance(&velocity_x_history));
   }
   Position_Y_OK = 0;
   return -1;
@@ -394,11 +378,14 @@ double Angle_robust(void)
     angle_estimate_final = Angle();
   }
 
-  if (angle_history_OK(&angle_history) && Angle_OK)
+  if (Angle_OK && angle_history_OK(&angle_history))
   {
     // printf("Angle history is ok!\n");
     double reading = Angle();
     // printf("angle: %f \n", reading);
+    // printf("variance: %f\n", calc_variance(angle_history.history));
+    // print_array(&angle_history);
+
     add_history(&angle_history, reading);
     // angle_estimate = reading;   // Correct angle_estimate if sensor is ok
     return reading;
