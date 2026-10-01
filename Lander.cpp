@@ -404,7 +404,7 @@ double Angle_robust(void)
     printf("Angle history not ok! Returning estimate based on angle hist.\n");
   Angle_OK = 0;
 
-  printf("Angle estimate: %f\n", angle_estimate);
+  // printf("Angle estimate: %f\n", angle_estimate);
   return angle_estimate;
 }
 
@@ -423,7 +423,7 @@ void Rotate_robust(double angle) {
     angle_estimate += 360;
   }
 
-  printf("Rotating by %f", angle_to_rotate);
+  printf("Rotating by %f\n", angle_to_rotate);
   Rotate(angle_to_rotate);
 }
 
@@ -539,16 +539,21 @@ void Lander_Control(void)
 
   // printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
 
+  // Ship is extremely close to goal
   if (PLAT_Y - Position_Y_robust() < 30 && fabs(Position_X_robust() - PLAT_X) < 50)
   {
     // printf("The last stand\n");
     Robust_Thruster(0);
 
-    if (Angle_robust() >= 180)
+    if (Angle_robust() >= 180) {
+      printf("ship pointing left, last stand\n");
       Rotate_robust(360 - Angle_robust());
-    else
-
+    }
+    else {
+      printf("ship pointing right, last stand\n");
       Rotate_robust(-Angle_robust());
+    }
+    
     return;
   }
 
@@ -615,6 +620,8 @@ void Lander_Control(void)
 
     if (rotation < -180)
       rotation += 360;
+
+    printf("fixing rot\n");
     Rotate_robust(rotation);
     // //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
     return;
@@ -676,8 +683,11 @@ void Safety_Override(void)
   // safety override (close to the landing platform
   // the Control_Policy() should be trusted to
   // safely land the craft)
-  if (fabs(PLAT_X - Position_X_robust()) < 200 && fabs(PLAT_Y - Position_Y_robust()) < 200)
+  if (fabs(PLAT_X - Position_X_robust()) < 200 && fabs(PLAT_Y - Position_Y_robust()) < 200) {
+    override = 0;
+    printf("Close to landing platform, disabling safety override\n");
     return;
+  }
 
   if (Position_Y_robust() < 60)
   {
