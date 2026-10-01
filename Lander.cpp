@@ -265,9 +265,9 @@ int angle_history_OK(History *h)
 
   if (variance >= 200)
   {
-    printf("Not Okay!\n");
-    // print_array(diff);
-    printf("rotation variance: %f\n", variance);
+    // printf("Not Okay!\n");
+    //  print_array(diff);
+    // printf("rotation variance: %f\n", variance);
   }
 
   return variance < 200;
@@ -321,7 +321,7 @@ double Velocity_Y_robust(void)
   }
   if (Velocity_Y_OK)
   {
-    printf("Vertical Velocity history not ok!\n");
+    // printf("Vertical Velocity history not ok!\n");
   }
   Velocity_Y_OK = 0;
   return -1;
@@ -339,7 +339,7 @@ double Position_X_robust(void)
   }
   if (Position_X_OK)
   {
-    printf("Horizontal Position history not ok!\n");
+    // printf("Horizontal Position history not ok!\n");
   }
   Position_X_OK = 0;
   return -1;
@@ -357,7 +357,7 @@ double Position_Y_robust(void)
   }
   if (Position_Y_OK)
   {
-    printf("Vertical Position history not ok!\n");
+    // printf("Vertical Position history not ok!\n");
   }
   Position_Y_OK = 0;
   return -1;
@@ -371,10 +371,12 @@ double angle_estimate_tick_start = -1;
 double Angle_robust(void)
 {
   // Set initial angle estimate on simulation start.
-  if (angle_estimate == -1) {
+  if (angle_estimate == -1)
+  {
     angle_estimate = Angle();
   }
-  if (angle_estimate_final == -1) {
+  if (angle_estimate_final == -1)
+  {
     angle_estimate_final = Angle();
   }
 
@@ -387,7 +389,7 @@ double Angle_robust(void)
     // print_array(&angle_history);
 
     add_history(&angle_history, reading);
-    angle_estimate = reading;   // Correct angle_estimate if sensor is ok
+    angle_estimate = reading;       // Correct angle_estimate if sensor is ok
     angle_estimate_final = reading; // Correct angle_estimate_final if sensor is ok
     return reading;
   }
@@ -401,12 +403,13 @@ double Angle_robust(void)
   return angle_estimate_final;
 }
 
-void Rotate_robust(double angle) {
+void Rotate_robust(double angle)
+{
   // Ship can only rotate MAX_ROT_RATE every tick.
   double MAX_ROT_RATE_DEG = MAX_ROT_RATE * 180 / M_PI;
   double angle_to_rotate = fmin(fabs(angle), MAX_ROT_RATE_DEG);
 
-  if (angle < 0) 
+  if (angle < 0)
   {
     angle_to_rotate *= -1;
   }
@@ -418,12 +421,12 @@ void Rotate_robust(double angle) {
 
   // Simulator only counts the last Rotate command in a tick.
   angle_estimate = fmod((angle_estimate_tick_start + angle_to_rotate), 360);
-  if (angle_estimate < 0) 
+  if (angle_estimate < 0)
   {
     angle_estimate += 360;
   }
 
-  printf("Rotating by %f\n", angle_to_rotate);
+  // printf("Rotating by %f\n", angle_to_rotate);
   Rotate(angle_to_rotate);
 }
 
@@ -431,7 +434,8 @@ void Rotate_robust(double angle) {
  * Must be called before simulation returns so that the final angle estimate is updated to the last known good value.
  * This is necessary because the angle sensor may have failed and the last known good value may be different from the current angle estimate.
  */
-void update_angle_estimate_final() {
+void update_angle_estimate_final()
+{
   angle_estimate_final = angle_estimate;
 }
 
@@ -540,22 +544,10 @@ void Lander_Control(void)
   if (fabs(PLAT_X - Position_X_robust()) / fabs(Velocity_X_robust()) > 1.25 * fabs(PLAT_Y - Position_Y_robust()) / fabs(Velocity_Y_robust()))
     VYlim = 0;
 
-  // IMPORTANT NOTE: The code below assumes all components working
-  // properly. IT MAY OR MAY NOT BE USEFUL TO YOU when components
-  // fail. More likely, you will need a set of case-based code
-  // chunks, each of which works under particular failure conditions.
-
-  // Check for rotation away from zero degrees - Rotate first,
-  // use thrusters only when not rotating to avoid adding
-  // velocity components along the rotation directions
-  // Note that only the latest Rotate() command has any
-  // effect, i.e. the rotation angle does not accumulate
-  // for successive calls.
-
   // Figure out what orientation is needed
   double wanted_orientation = 0;
 
-  // printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() - PLAT_Y));
+  // printf("Main velocity: %f X_pos: %f Y_pox: %f\n", Velocity_Y(), fabs(Position_X_robust() - PLAT_X), fabs(Position_Y_robust() -
 
   // Ship is extremely close to goal
   if (PLAT_Y - Position_Y_robust() < 30 && fabs(Position_X_robust() - PLAT_X) < 50)
@@ -565,15 +557,17 @@ void Lander_Control(void)
 
     double cur_angle = Angle_robust();
 
-    if (cur_angle >= 180) {
-      printf("ship pointing left, last stand\n");
+    if (cur_angle >= 180)
+    {
+      // printf("ship pointing left, last stand\n");
       Rotate_robust(360 - cur_angle);
     }
-    else {
-      printf("ship pointing right, last stand\n");
+    else
+    {
+      // printf("ship pointing right, last stand\n");
       Rotate_robust(-cur_angle);
     }
-    
+
     update_angle_estimate_final();
     return;
   }
@@ -617,7 +611,8 @@ void Lander_Control(void)
       wanted_orientation = 315;
     }
   }
-  else {
+  else
+  {
     wanted_orientation = 0;
   }
 
@@ -651,9 +646,9 @@ void Lander_Control(void)
     if (rotation < -180)
       rotation += 360;
 
-    printf("______\nfixing rot\n");
+    // printf("______\nfixing rot\n");
     Rotate_robust(rotation);
-    printf("______\n");
+    // printf("______\n");
     // //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
 
     update_angle_estimate_final();
@@ -663,7 +658,11 @@ void Lander_Control(void)
   // Safety_Override() to save us from crashing with the ground.
   if (fabs(Position_X_robust() - PLAT_X) < 100)
     Robust_Thruster(0.1);
-  else if (Velocity_Y_robust() < 1)
+  else if (Velocity_Y_robust() >= 1)
+  {
+    Robust_Thruster(0.0);
+  }
+  else if (Velocity_Y_robust() < 0)
     Robust_Thruster(0.5);
 }
 
@@ -716,9 +715,10 @@ void Safety_Override(void)
   // safety override (close to the landing platform
   // the Control_Policy() should be trusted to
   // safely land the craft)
-  if (fabs(PLAT_X - Position_X_robust()) < 200 && fabs(PLAT_Y - Position_Y_robust()) < 200) {
+  if (fabs(PLAT_X - Position_X_robust()) < 200 && fabs(PLAT_Y - Position_Y_robust()) < 200)
+  {
     override = 0;
-    printf("Close to landing platform, disabling safety override\n");
+    // printf("Close to landing platform, disabling safety override\n");
     return;
   }
 
@@ -728,12 +728,6 @@ void Safety_Override(void)
     Robust_Thruster(0);
     return;
   }
-
-  // Determine the closest surfaces in the direction
-  // of motion. This is done by checking the sonar
-  // array in the quadrant corresponding to the
-  // ship's motion direction to find the entry
-  // with the smallest registered distance
 
   // Horizontal direction.
   dmin = 1000000;
