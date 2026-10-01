@@ -4,15 +4,22 @@ Project 1 - Fault Tolerant Lander Control
 ______________________________________________________________________
 
 Team name:
+Fault-Tolerant Lander Team
 
 Name 1 (last, first):
+Roy, Christopher
 Student number 1:
+TBD
 
 Name 2 (last, first):
+Ahmad
 Student number 2:
+TBD
 
 Name 3 (last, first):
+N/A
 Student number 3:
+N/A
 
 (special: Lose 5 marks for not completing the above information)
 _______________________________________________________________________
@@ -23,21 +30,63 @@ you think the task could be completed
 
 a) The program can land the craft safely in mode '1'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (yes/no): no (0/3 landing in automated runs)
+   - for the 'hard.ppm' map (yes/no): no (0/3 landing in automated runs)
 
    If it fails, describe the conditions in which it fails and how
    you think this could be resolved
+   - Current failures are mostly unstable trajectories, timeout without
+     successful touchdown, or "Elvis has left the building".
+   - We need stronger state estimation, lower-noise orientation control,
+     and a more conservative descent profile near terrain.
+   - We also need explicit fallback control branches for each failed
+     sensor/control combination.
 
 b) The program can land the craft safely in mode '2'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (yes/no): no (0/3 landing in automated runs)
+   - for the 'hard.ppm' map (yes/no): no (0/3 landing in automated runs)
 
    If it fails, describe the conditions in which it fails and how
    you think this could be resolved
+   - Mode 2 is harder because both control and sensor failures can happen.
+   - We observed crash/timeout outcomes with occasional large state drift.
+   - We need robust per-sensor estimators, better fault detection, and
+     cross-checking between sonar/range and kinematic estimates.
 
 _______________________________________________________________________
+
+Project task status breakdown:
+
+Complete:
+- Repository setup and baseline project files are in place.
+- Lander_Control() and Safety_Override() have been customized.
+- Added robust-thruster fallback usage when main thruster fails.
+- Added filtered/fallback robust state estimation in Lander.cpp:
+  - Position/velocity smoothing and outlier rejection
+  - Angle normalization and shortest-rotation correction
+  - Sonar + rangefinder fallback logic in override checks
+- Added .gitignore for *.o and removed tracked Lander.o.
+
+In progress:
+- Tuning controller gains/thresholds to convert unstable runs into consistent landings.
+- Improving Safety_Override() behavior under combined sensor/control failures.
+- Expanding scenario coverage and reducing timeout outcomes.
+
+Need to be started / completed formally:
+- Fill in final student numbers and verify team roster details.
+- Achieve passing outcomes for required grading categories.
+- Finalize and polish answers below after stable performance is achieved.
+
+Grading-criteria verification snapshot (current):
+- Main thruster failure: not yet passing (hard map trial ended with Elvis)
+- Side thruster failure: not yet passing (left/right trials ended with Elvis)
+- Hard map with one thruster: not yet passing in current checks
+- Position sensor failure compensation: not yet passing
+- Velocity sensor failure compensation: in progress (timeouts)
+- Angle sensor failure compensation: in progress (timeouts)
+- Sonar failure compensation: not yet passing (crash observed)
+- Combined 2 sensors + >=1 thruster failure on hard map: not yet passing
 
 Questions:
 
@@ -47,44 +96,87 @@ Questions:
 1) What was the impact of having noisy sensors in your ability to
    determine the state of the craft and ultimately control it 
    properly?
+   - Noisy sensors create unstable control decisions because small
+     fluctuations in position/velocity/angle can trigger large thrust
+     and rotation changes.
+   - This leads to oscillation, over-correction, and late braking if we
+     directly trust raw measurements.
 
 2) Describe the technique(s) you used to deal with sensor noise
+   - We used filtering/smoothing on state variables and rejected outliers
+     with consistency checks.
+   - We estimate velocities from position deltas and use that estimate
+     when direct velocity readings are inconsistent.
+   - We normalize and smooth angle changes using shortest-rotation logic.
 
 3) Describe your strategy for dealing with thruster failures
+   - We route thrust commands through a robust thruster helper that
+     chooses a working thruster if the main thruster fails.
+   - We adapt orientation logic based on which thruster is available.
+   - Safety override applies stronger emergency thrust when collision risk
+     is detected.
 
 4) Describe your strategy for dealing with sensor malfunctions:
 
    - Position sensors
+     Use smoothed history and bounds checks to reject implausible values.
    - Velocity sensors
+     Cross-check direct velocity against position-derived velocity estimate.
    - Angle
+     Normalize angle and rotate through shortest direction to reduce
+     control jitter from noisy readings.
    - Sonar
+     Use valid sonar sectors when available and fallback to RangeDist().
 
    What if you have multiple failures? what could you do if, for
    example both position and velocity sensors became inoperative?
+   - If both position and velocity fail, we should rely more heavily on
+     angle + range/sonar geometry and conservative descent policies.
+   - A practical strategy is to hold near-vertical attitude, cap descent
+     speed, avoid lateral motion, and only make small corrective actions.
+   - We should also track confidence scores for each sensor and switch
+     policies based on confidence.
 
 5) What was the hardest failure type to deal with (i.e. which is
    the component, either sensor or control that makes the lander
    harder to handle?)?
+   - Combined failures (especially velocity + position with a thruster
+     failure) are currently the hardest because control needs both
+     reliable state and sufficient actuation authority.
 
 6) Assume a human pilot was in charge of controlling the craft 
    (i.e. the pilot has control of thrusters and rotation).
    How would you change Safety_Override() so that it prevents
    the pilot from accidentally crashing the lander?
-   
+   - Keep pilot controls active by default, but add hard safety envelopes
+     (max descent speed, max tilt near ground, min terrain clearance).
+   - If pilot commands violate envelopes, clamp or override with a brief
+     corrective maneuver and then return control to the pilot.
+    
 7) Do you think it is reasonable to write such a control function?
    (i.e. a routine that takes control from a human for their
     own safety)
+   - Yes, if the override triggers are transparent, bounded, and tested.
+   - It should only intervene in clearly unsafe states and should not
+     fight normal pilot intent.
 
 8) Should the pilot be aware that this software is present?
    (yes or no, and tell me why you think so!)
+   - Yes. The pilot needs to know when and why control can be overridden
+     to maintain trust, predictability, and accountability.
 
 9) Would you buy/drive a car that you know has control software
    that will take control from you if it estimates you are
    doing something dangerous?
+   - Yes, if there is strong safety evidence, low false positives, and
+     clear driver notification when intervention occurs.
 
 10) Can you as an embedded systems designer think of every 
     possible scenario that could go wrong so as to write 
     control software that ALWAYS works?
+    - No. We cannot enumerate every real-world scenario, so we must
+      design for graceful degradation, robust fail-safes, and continuous
+      validation instead of assuming perfect coverage.
 
     Think about that...
 ________________________________________________________________
@@ -106,4 +198,3 @@ Grading:
       sensor/engine failures, and still land on hard map        / Up to 15 depending on crunchiness
 
 Total for Project #1				                / 100
-
