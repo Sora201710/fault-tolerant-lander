@@ -318,6 +318,7 @@ double Angle_robust(void)
     printf("Angle history not ok! Returning estimate based on angle hist.\n");
   Angle_OK = 0;
 
+  printf("Angle estimate: %f\n", angle_estimate);
   return angle_estimate;
 }
 
@@ -336,6 +337,7 @@ void Rotate_robust(double angle) {
     angle_estimate += 360;
   }
 
+  printf("Rotating by %f", angle_to_rotate);
   Rotate(angle_to_rotate);
 }
 
