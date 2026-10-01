@@ -382,11 +382,16 @@ double Position_Y_robust(void)
 int Angle_OK = 1;
 // Keep angle estimate from beginning of sim, updating when Rotate() is called.
 double angle_estimate = -1;
+double angle_estimate_final = -1;
+double angle_estimate_tick_start = -1;
 double Angle_robust(void)
 {
   // Set initial angle estimate on simulation start.
   if (angle_estimate == -1) {
     angle_estimate = Angle();
+  }
+  if (angle_estimate_final == -1) {
+    angle_estimate_final = Angle();
   }
 
   if (angle_history_OK(&angle_history) && Angle_OK)
@@ -395,7 +400,7 @@ double Angle_robust(void)
     double reading = Angle();
     // printf("angle: %f \n", reading);
     add_history(&angle_history, reading);
-    angle_estimate = reading;   // Correct angle_estimate if sensor is ok
+    // angle_estimate = reading;   // Correct angle_estimate if sensor is ok
     return reading;
   }
 
@@ -404,8 +409,8 @@ double Angle_robust(void)
     printf("Angle history not ok! Returning estimate based on angle hist.\n");
   Angle_OK = 0;
 
-  // printf("Angle estimate: %f\n", angle_estimate);
-  return angle_estimate;
+  printf("Angle estimate final: %f\n", angle_estimate_final);
+  return angle_estimate_final;
 }
 
 void Rotate_robust(double angle) {
@@ -417,14 +422,22 @@ void Rotate_robust(double angle) {
     angle_to_rotate *= -1;
   }
 
-  // Update angle estimate. Will only be updated [-MAX_ROT_RATE, MAX_ROT_RATE].
-  angle_estimate = fmod((angle_estimate + angle_to_rotate), 360);
+  // Simulator only counts the last Rotate command in a tick.
+  angle_estimate = fmod((angle_estimate_tick_start + angle_to_rotate), 360);
   if (angle_estimate < 0) {
     angle_estimate += 360;
   }
 
   printf("Rotating by %f\n", angle_to_rotate);
   Rotate(angle_to_rotate);
+}
+
+/*
+ * Must be called before simulation returns so that the final angle estimate is updated to the last known good value.
+ * This is necessary because the angle sensor may have failed and the last known good value may be different from the current angle estimate.
+ */
+void update_angle_estimate_final() {
+  angle_estimate_final = angle_estimate;
 }
 
 /**
@@ -442,6 +455,16 @@ int override = 0;
 
 void Lander_Control(void)
 {
+  if (angle_estimate == -1)
+  {
+    angle_estimate = Angle();
+  }
+  if (angle_estimate_final == -1)
+  {
+    angle_estimate_final = angle_estimate;
+  }
+  angle_estimate_tick_start = angle_estimate;
+
   if (override == 1)
   {
     return;
@@ -554,6 +577,7 @@ void Lander_Control(void)
       Rotate_robust(-Angle_robust());
     }
     
+    update_angle_estimate_final();
     return;
   }
 
@@ -564,8 +588,11 @@ void Lander_Control(void)
   }
 
   // Module is oriented properly, check for horizontal position
-  // and set thrusters appropriately.
-  if (Position_X_robust() > PLAT_X)
+  // and set thrusters appropriately within a tolerance.
+
+  double x_diff = Position_X_robust() - PLAT_X;
+
+  if (x_diff > 5)
   {
     // Lander is to the LEFT of the landing platform, use Right thrusters to move
     // lander to the left.
@@ -580,7 +607,7 @@ void Lander_Control(void)
       wanted_orientation = 45;
     }
   }
-  else
+  else if (x_diff < -5)
   {
     // Lander is to the RIGHT of the landing platform, opposite from above
     if (Velocity_X_robust() < VXlim)
@@ -593,8 +620,11 @@ void Lander_Control(void)
       wanted_orientation = 315;
     }
   }
+  else {
+    wanted_orientation = 0;
+  }
 
-  if (fabs(Position_X_robust() - PLAT_X) < 20 && PLAT_Y - Position_Y_robust() < 300)
+  if (fabs(x_diff) < 20 && PLAT_Y - Position_Y_robust() < 300)
   {
     wanted_orientation = 0;
   }
@@ -607,7 +637,10 @@ void Lander_Control(void)
   {
     wanted_orientation = wanted_orientation + 90;
   }
-  wanted_orientation = (int)wanted_orientation % 360;
+
+  // Bring wanted orientation into [0, 360) range.
+  wanted_orientation = fmod(wanted_orientation, 360);
+
   // //printf("wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
   //  rotate to desired orientation
   if (fabs(Angle_robust() - wanted_orientation) > 15)
@@ -625,6 +658,8 @@ void Lander_Control(void)
     Rotate_robust(rotation);
     printf("______\n");
     // //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
+
+    update_angle_estimate_final();
     return;
   }
 
@@ -756,6 +791,7 @@ void Safety_Override(void)
       if (rotation < -180)
         rotation += 360;
       Rotate_robust(rotation);
+      update_angle_estimate_final();
       return;
     }
     override = 1;
@@ -805,6 +841,7 @@ void Safety_Override(void)
       if (rotation < -180)
         rotation += 360;
       Rotate_robust(rotation);
+      update_angle_estimate_final();
       return;
     }
     if (Velocity_Y_robust() > 2.0)
