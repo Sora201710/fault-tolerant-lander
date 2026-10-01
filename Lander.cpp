@@ -164,7 +164,7 @@
 
 #include "Lander_Control.h"
 
-const int HISTORY_CAPACITY = 20;
+const int HISTORY_CAPACITY = 50;
 
 typedef struct
 {
@@ -270,7 +270,7 @@ int angle_history_OK(History *h)
     printf("rotation variance: %f\n", variance);
   }
 
-  return variance < 200 && variance < 10000;
+  return variance < 200;
 }
 
 void Robust_Thruster(double thrust)
