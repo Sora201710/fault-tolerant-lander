@@ -3,16 +3,16 @@ CSCC85 - Fundamentals of Robotics and Automated Systems - UTSC
 Project 1 - Fault Tolerant Lander Control
 ______________________________________________________________________
 
-Team name:
+Team name: Ball-E
 
-Name 1 (last, first):
-Student number 1:
+Name 1 (last, first): Roy, Christopher
+Student number 1: 1010304083
 
-Name 2 (last, first):
-Student number 2:
+Name 2 (last, first): Ahmad Aqeeb
+Student number 2: 1010102372
 
-Name 3 (last, first):
-Student number 3:
+Name 3 (last, first): Fong, Andre
+Student number 3: 1008156950
 
 (special: Lose 5 marks for not completing the above information)
 _______________________________________________________________________
@@ -23,19 +23,22 @@ you think the task could be completed
 
 a) The program can land the craft safely in mode '1'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (yes/no) yes
+   - for the 'hard.ppm' map (yes/no) yes
 
    If it fails, describe the conditions in which it fails and how
    you think this could be resolved
 
 b) The program can land the craft safely in mode '2'
   
-   - for the 'easy.ppm' map (yes/no)
-   - for the 'hard.ppm' map (yes/no)
+   - for the 'easy.ppm' map (yes/no) no
+   - for the 'hard.ppm' map (yes/no) no
 
    If it fails, describe the conditions in which it fails and how
    you think this could be resolved
+
+   We were able to correctly identify when a control/sensor component was failing, but were 
+   unable to remedy these failures.
 
 _______________________________________________________________________
 
@@ -48,45 +51,105 @@ Questions:
    determine the state of the craft and ultimately control it 
    properly?
 
+   It made it difficult to determine position from velocity (and vice versa) in the case of any of those sensors failing.
+   Our approach to estimate either value was originally to calculate the time step in between tick.
+
 2) Describe the technique(s) you used to deal with sensor noise
+
+   We kept track of a large number of historical sensor readings so that we could get a better 
+   average for determining whether or not the sensor failed (using variance, as described below).
 
 3) Describe your strategy for dealing with thruster failures
 
+   * Picked one thruster as the main thruster, and rotated the ship left or right wrt. the new main thruster to adjust its angle.
+   * Either the left or right thruster became the main thruster.
+   * At the very end, rotate back to 0deg to land safely.
+
 4) Describe your strategy for dealing with sensor malfunctions:
+
+   * Implemented robust History detection for all sensor samples.
+   * Check variance within all sensor readings, if variance > threshold, estimate sensor using other methods/sensors.
 
    - Position sensors
    - Velocity sensors
    - Angle
+      - From the beginning of the simulation, initialize an estimated angle.
+      - The ship only rotates when we call Rotate, and should not rotate by any other means.
+      - Thus, if we keep track of the very first angle and add/sub by our Rotate calls, we should
+        have a pretty good idea of what our ship's actual orientation is.
+      - Again, only return the estimated angle when angle sensors are determined to have failed.
    - Sonar
 
    What if you have multiple failures? what could you do if, for
    example both position and velocity sensors became inoperative?
 
+   * We originally planned on using thruster power and angle of the ship to get a value for acceleration
+     so that we can estimate velocity and position with calculation (using RT_ACCEL, MT_ACCEL, etc).
+     In the end, such an implementation proved too difficult with our time constraints.
+
 5) What was the hardest failure type to deal with (i.e. which is
    the component, either sensor or control that makes the lander
    harder to handle?)?
+
+   In general, sensor failures were a lot more difficult to handle since control failures
+   could be counteracted by depending on our reliable sensors (e.g., our solution for thruster failures).
+   With reliable sensors, we have information on our surroundings and can formulate a plan for how to act.
+
+   However, sensor failures had to be countered with heavy estimation and was prone to error propagation.
+   Specifically, the x-position sensor failure was the most difficult to deal with because it was difficult to 
+   come up with an alternative method of calculating the value.
 
 6) Assume a human pilot was in charge of controlling the craft 
    (i.e. the pilot has control of thrusters and rotation).
    How would you change Safety_Override() so that it prevents
    the pilot from accidentally crashing the lander?
+
+   Instead of having a set Safety_Override() routine, we would change it to a warning 
+   displaying the appropriate error (sensor or control) and allow the trained human pilot 
+   to take action of their own initiative. For very extreme conditions, such as approaching 
+   a wall with a dangerously high velocity, the Safety_Override could perform a simple operation 
+   like emergency braking, etc. This would obviously depend on healthy sensors, so we would have 
+   a sensor failure detection method similar to what we wrote, and disable such automatic safety features 
+   if sensors are faulty. (may cause unintended safety actions)
    
 7) Do you think it is reasonable to write such a control function?
    (i.e. a routine that takes control from a human for their
     own safety)
 
+   Yes, but there is a certain threshold for the level of control the system should have over 
+   the system's function (over the human). For example, all modern cars have an emergency braking system 
+   that reacts for the driver because it would be difficult for them to react under normal circumstances. 
+   As mentioned earlier, this also depends on the health of our sensors. If sensors are malfunctioning, it would 
+   be unwise to allow the system to take automatic emergency control.
+
 8) Should the pilot be aware that this software is present?
    (yes or no, and tell me why you think so!)
+
+   Yes... of course. If a pilot had no clue of an emergency feature and it activated, 
+   they may not be able to know how to react to it / disable the feature. This would cause 
+   something similar to the Boeing 737 MAX incident. Even if the software had such functions 
+   for the pilots' own well-being, it is imperative that they understand of its presence.
 
 9) Would you buy/drive a car that you know has control software
    that will take control from you if it estimates you are
    doing something dangerous?
+
+   Our group's answer leans towards no because of iRobot.
+
+   But for real, our answer leans towards yes depending on public opinion and how well-documented 
+   such control software is. Humans have certain capabilities that well-designed machines/sensors 
+   can help improve.
 
 10) Can you as an embedded systems designer think of every 
     possible scenario that could go wrong so as to write 
     control software that ALWAYS works?
 
     Think about that...
+
+    No! Even if millions of dollars were spent on our embedded systems team, there will 
+    inevitably be a scenario that was not thought of. If it were possible to think of 
+    every possible scenario, we would be possible to create software without any bugs. Of course,
+    this has not been achieved yet.
 ________________________________________________________________
 
 Grading:
