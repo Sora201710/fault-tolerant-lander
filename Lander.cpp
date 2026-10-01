@@ -621,8 +621,9 @@ void Lander_Control(void)
     if (rotation < -180)
       rotation += 360;
 
-    printf("fixing rot\n");
+    printf("______\nfixing rot\n");
     Rotate_robust(rotation);
+    printf("______\n");
     // //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
     return;
   }
