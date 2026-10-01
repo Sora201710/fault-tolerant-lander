@@ -196,6 +196,15 @@ void add_history(History *h, double reading)
   }
 }
 
+void print_array(History *history)
+{
+  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  {
+    printf("%f, ", history->history[i]);
+  }
+  printf("\n");
+}
+
 int history_OK(History *h)
 {
   if (h->size < 5)
@@ -263,7 +272,10 @@ double Velocity_X_robust(void)
     return reading;
   }
   if (Velocity_X_OK)
+  {
     printf("Velocity X history not ok!\n");
+    print_array(&velocity_x_history);
+  }
   Velocity_X_OK = 0;
   return -1;
 }
@@ -279,7 +291,10 @@ double Velocity_Y_robust(void)
     return reading;
   }
   if (Velocity_Y_OK)
+  {
     printf("Velocity Y history not ok!\n");
+    print_array(&velocity_y_history);
+  }
   Velocity_Y_OK = 0;
   return -1;
 }
@@ -295,7 +310,10 @@ double Position_X_robust(void)
     return reading;
   }
   if (Position_X_OK)
+  {
     printf("Position X history not ok!\n");
+    print_array(&position_x_history);
+  }
   Position_X_OK = 0;
   return -1;
 }
@@ -311,7 +329,10 @@ double Position_Y_robust(void)
     return reading;
   }
   if (Position_Y_OK)
+  {
     printf("Position Y history not ok!\n");
+    print_array(&position_y_history);
+  }
   Position_Y_OK = 0;
   return -1;
 }
@@ -328,7 +349,10 @@ double Angle_robust(void)
     return reading;
   }
   if (Angle_OK)
+  {
     printf("Angle history not ok!\n");
+    print_array(&angle_history);
+  }
   Angle_OK = 0;
   return -1;
 }
