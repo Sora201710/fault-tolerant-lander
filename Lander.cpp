@@ -196,25 +196,25 @@ void add_history(History *h, double reading)
   }
 }
 
-double calc_variance(double *h)
+double calc_variance(double *array, int size)
 {
   double sum = 0.0;
 
-  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  for (int i = 0; i < size; i++)
   {
-    sum += h[i];
+    sum += array[i];
   }
 
-  double mean = sum / HISTORY_CAPACITY;
+  double mean = sum / size;
 
   double square_diff = 0.0;
 
-  for (int i = 0; i < HISTORY_CAPACITY; i++)
+  for (int i = 0; i < size; i++)
   {
-    square_diff += (h[i] - mean) * (h[i] - mean);
+    square_diff += (array[i] - mean) * (array[i] - mean);
   }
 
-  double variance = square_diff / (HISTORY_CAPACITY - 1);
+  double variance = square_diff / (size - 1);
 
   return variance;
 }
@@ -232,16 +232,16 @@ int history_OK(History *h)
 {
   if (h->size < HISTORY_CAPACITY)
     return 1;
-  double variance = calc_variance(h->history);
+  double variance = calc_variance(h->history, HISTORY_CAPACITY);
 
-  if (variance >= 200)
+  if (variance >= 250)
   {
-    printf("Not Okay!\n");
-    print_array(h->history);
-    printf("variance: %f\n", variance);
+    // printf("Not Okay!\n");
+    // print_array(h->history);
+    // printf("variance: %f\n", variance);
   }
 
-  return variance < 200;
+  return variance < 250;
 }
 
 int angle_history_OK(History *h)
@@ -261,7 +261,7 @@ int angle_history_OK(History *h)
     diff[i - 1] = distance;
   }
 
-  double variance = calc_variance(diff);
+  double variance = calc_variance(diff, HISTORY_CAPACITY - 1);
 
   if (variance >= 200)
   {
