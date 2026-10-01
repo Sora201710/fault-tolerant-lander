@@ -222,62 +222,69 @@ void Robust_Thruster(double thrust)
   }
 }
 
+int Velocity_X_OK = 1;
 double Velocity_X_robust(void){
-  if (history_OK(&velocity_x_history)){
+  if (history_OK(&velocity_x_history) && Velocity_X_OK){
     //printf("Velocity X history is ok!\n");
     double reading = Velocity_X();
     add_history(&velocity_x_history, reading);
     return reading;
   }
-
+  Velocity_X_OK = 0;
   //printf("Velocity X history not ok!\n");
   return -1;
 }
 
+int Velocity_Y_OK = 1;
 double Velocity_Y_robust(void){
-  if (history_OK(&velocity_y_history)){
+  if (history_OK(&velocity_y_history) && Velocity_Y_OK){
     //printf("Velocity Y history is ok!\n");
     double reading = Velocity_Y();
     add_history(&velocity_y_history, reading);
     return reading;
   }
-
+  Velocity_Y_OK = 0;
   //printf("Velocity Y history not ok!\n");
   return -1;
 }
 
+int Position_X_OK = 1;
 double Position_X_robust(void){
   double reading = Position_X();
-  if (history_OK(&position_x_history)){
+  if (history_OK(&position_x_history) && Position_X_OK){
     //printf("Position X history is ok!\n");
     add_history(&position_x_history, reading);
     return reading;
   }
-
+  Position_X_OK = 0;
   //printf("Position X history not ok!\n");
   return -1;
 }
 
+int Position_Y_OK = 1;
 double Position_Y_robust(void){
-  if (history_OK(&position_y_history)){
+  if (history_OK(&position_y_history) && Position_Y_OK){
     //printf("Position Y history is ok!\n");
     double reading = Position_Y();
     add_history(&position_y_history, reading);
     return reading;
   }
 
+  Position_Y_OK = 0;
   //printf("Position Y history not ok!\n");
   return -1;
 }
 
+int Angle_OK = 1;
 double Angle_robust(void){
-  if (history_OK(&angle_history)){
+  if (history_OK(&angle_history) && Angle_OK){
     //printf("Angle history is ok!\n");
     double reading = Angle();
     add_history(&angle_history, reading);
     return reading;
   }
 
+  Angle_OK = 0;
   //printf("Angle history not ok!\n");
   return -1;
 }
