@@ -288,7 +288,7 @@ double Position_Y_robust(void)
     add_history(&position_y_history, reading);
     return reading;
   }
-  if (Position_X_OK)
+  if (Position_Y_OK)
     printf("Position Y history not ok!\n");
   Position_Y_OK = 0;
   return -1;
