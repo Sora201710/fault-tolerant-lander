@@ -210,7 +210,29 @@ int history_OK(History *h)
 
   double average_distance = total_distance / 4;
 
-  return (average_distance <= 15.0);
+    return (average_distance <= 30.0);
+}
+
+int angle_history_OK(History *h) {
+    if (h->size < 5)
+        return 1;
+
+    double total_distance = 0;
+
+    for (int i = h->size - 4; i < h->size; i++) {
+
+        double distance = fabs(h->history[i] - h->history[i - 1]);
+
+        // Handle crossing from 360° to 0°
+        if (distance > 180.0)
+            distance = 360.0 - distance;
+
+        total_distance += distance;
+    }
+
+    double average_distance = total_distance / 4;
+
+    return (average_distance <= 20.0);
 }
 
 void Robust_Thruster(double thrust)
@@ -297,10 +319,11 @@ double Position_Y_robust(void)
 int Angle_OK = 1;
 double Angle_robust(void)
 {
-  if (history_OK(&angle_history) && Angle_OK)
+  if (angle_history_OK(&angle_history) && Angle_OK)
   {
     // printf("Angle history is ok!\n");
     double reading = Angle();
+    printf("angle: %f \n", reading);
     add_history(&angle_history, reading);
     return reading;
   }
