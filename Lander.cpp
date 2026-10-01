@@ -387,7 +387,8 @@ double Angle_robust(void)
     // print_array(&angle_history);
 
     add_history(&angle_history, reading);
-    // angle_estimate = reading;   // Correct angle_estimate if sensor is ok
+    angle_estimate = reading;   // Correct angle_estimate if sensor is ok
+    angle_estimate_final = reading; // Correct angle_estimate_final if sensor is ok
     return reading;
   }
 
@@ -405,13 +406,20 @@ void Rotate_robust(double angle) {
   double MAX_ROT_RATE_DEG = MAX_ROT_RATE * 180 / M_PI;
   double angle_to_rotate = fmin(fabs(angle), MAX_ROT_RATE_DEG);
 
-  if (angle < 0) {
+  if (angle < 0) 
+  {
     angle_to_rotate *= -1;
+  }
+
+  if (fabs(angle_to_rotate) < 1e-9)
+  {
+    return;
   }
 
   // Simulator only counts the last Rotate command in a tick.
   angle_estimate = fmod((angle_estimate_tick_start + angle_to_rotate), 360);
-  if (angle_estimate < 0) {
+  if (angle_estimate < 0) 
+  {
     angle_estimate += 360;
   }
 
@@ -555,13 +563,15 @@ void Lander_Control(void)
     // printf("The last stand\n");
     Robust_Thruster(0);
 
-    if (Angle_robust() >= 180) {
+    double cur_angle = Angle_robust();
+
+    if (cur_angle >= 180) {
       printf("ship pointing left, last stand\n");
-      Rotate_robust(360 - Angle_robust());
+      Rotate_robust(360 - cur_angle);
     }
     else {
       printf("ship pointing right, last stand\n");
-      Rotate_robust(-Angle_robust());
+      Rotate_robust(-cur_angle);
     }
     
     update_angle_estimate_final();
@@ -579,7 +589,7 @@ void Lander_Control(void)
 
   double x_diff = Position_X_robust() - PLAT_X;
 
-  if (x_diff > 5)
+  if (x_diff > 10)
   {
     // Lander is to the LEFT of the landing platform, use Right thrusters to move
     // lander to the left.
@@ -594,7 +604,7 @@ void Lander_Control(void)
       wanted_orientation = 45;
     }
   }
-  else if (x_diff < -5)
+  else if (x_diff < -10)
   {
     // Lander is to the RIGHT of the landing platform, opposite from above
     if (Velocity_X_robust() < VXlim)
@@ -630,7 +640,7 @@ void Lander_Control(void)
 
   // //printf("wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
   //  rotate to desired orientation
-  if (fabs(Angle_robust() - wanted_orientation) > 15)
+  if (fabs(Angle_robust() - wanted_orientation) > 3)
   {
     double rotation = wanted_orientation - Angle_robust();
 
