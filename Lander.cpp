@@ -295,19 +295,48 @@ double Position_Y_robust(void)
 }
 
 int Angle_OK = 1;
+// Keep angle estimate from beginning of sim, updating when Rotate() is called.
+double angle_estimate = -1;
 double Angle_robust(void)
 {
+  // Set initial angle estimate on simulation start.
+  if (angle_estimate == -1) {
+    angle_estimate = Angle();
+  }
+
   if (history_OK(&angle_history) && Angle_OK)
   {
     // printf("Angle history is ok!\n");
     double reading = Angle();
     add_history(&angle_history, reading);
+    angle_estimate = reading;   // Correct angle_estimate if sensor is ok
     return reading;
   }
+
+  // ANGLE SENSOR FAILURE BELOW HERE
   if (Angle_OK)
-    printf("Angle history not ok!\n");
+    printf("Angle history not ok! Returning estimate based on angle hist.\n");
   Angle_OK = 0;
-  return -1;
+
+  return angle_estimate;
+}
+
+void Rotate_robust(double angle) {
+  // Ship can only rotate MAX_ROT_RATE every tick.
+  double MAX_ROT_RATE_DEG = MAX_ROT_RATE * 180 / M_PI;
+  double angle_to_rotate = fmin(fabs(angle), MAX_ROT_RATE_DEG);
+
+  if (angle < 0) {
+    angle_to_rotate *= -1;
+  }
+
+  // Update angle estimate. Will only be updated [-MAX_ROT_RATE, MAX_ROT_RATE].
+  angle_estimate = fmod((angle_estimate + angle_to_rotate), 360);
+  if (angle_estimate < 0) {
+    angle_estimate += 360;
+  }
+
+  Rotate(angle_to_rotate);
 }
 
 /**
@@ -428,10 +457,10 @@ void Lander_Control(void)
     Robust_Thruster(0);
 
     if (Angle_robust() >= 180)
-      Rotate(360 - Angle_robust());
+      Rotate_robust(360 - Angle_robust());
     else
 
-      Rotate(-Angle_robust());
+      Rotate_robust(-Angle_robust());
     return;
   }
 
@@ -498,7 +527,7 @@ void Lander_Control(void)
 
     if (rotation < -180)
       rotation += 360;
-    Rotate(rotation);
+    Rotate_robust(rotation);
     // //printf("INSIDE LOOP wanted orientation: %f  angle: %f\n", wanted_orientation, Angle_robust());
     return;
   }
@@ -627,7 +656,7 @@ void Safety_Override(void)
 
       if (rotation < -180)
         rotation += 360;
-      Rotate(rotation);
+      Rotate_robust(rotation);
       return;
     }
     override = 1;
@@ -676,7 +705,7 @@ void Safety_Override(void)
 
       if (rotation < -180)
         rotation += 360;
-      Rotate(rotation);
+      Rotate_robust(rotation);
       return;
     }
     if (Velocity_Y_robust() > 2.0)
